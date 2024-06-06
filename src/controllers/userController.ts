@@ -1,0 +1,77 @@
+import { Request, Response } from "express";
+import { User } from "../entity/UserEntity"
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken';
+// import { getRepository } from "typeorm";
+import { myDataSource } from "../datasource";
+
+
+const SECRET_KEY = "rani";
+const userRepository = myDataSource.getRepository(User)
+
+export const register = async (req:Request, res:Response) => {
+    console.log("received reg request:", req.body);
+     const { firstName, lastName, email, password } = req.body;
+    
+     try{
+        if (!firstName||!lastName || !email || !password) {
+            return res.status(400).json({ message: "Field are empty" });
+        }
+        const existingUser = await userRepository.findOne({where: {email}});
+        if(existingUser){
+            return res.status(400).json({message: "User already exits"});
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const newUser = userRepository.create({
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+        });
+        const result = await userRepository.save(newUser);
+
+        const token = jwt.sign({email : result.email, id : result.id}, SECRET_KEY);
+        res.status(201).json({user: result, token: token});
+     } catch (error) {
+        console.log(error);
+        res.status(500).json({message: "Something went wrong"});
+     }
+}
+
+export const login = async (req:Request, res:Response) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email || !password) {
+            return res.status(400).json({message: "Email is required"});
+        }
+        const existingUser = await userRepository.findOne({ where: { email } });
+
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!existingUser.password) {
+            return res.status(400).json({ message: "Password is not set for this user" });
+        }
+
+        const matchPassword = await bcrypt.compare(password, existingUser.password);
+        if (!matchPassword) {
+            return res.status(400).json({ message: "Invalid Credentials" });
+        }
+
+        const token = jwt.sign({ email: existingUser.email, id: existingUser.id }, SECRET_KEY);
+        res.status(200).json({ user: existingUser, token: token });
+
+    } catch (error) {
+        console.log("Error during:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+}
+
+export const userController = {
+    register,
+    login,
+}
