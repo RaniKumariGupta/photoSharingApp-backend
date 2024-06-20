@@ -4,7 +4,7 @@ import { Request } from 'express';
 
 type MulterFile = Express.Multer.File;
 
-// Set storage engine
+
 const storage = multer.diskStorage({
     destination: './uploads/',
     filename: function (req: Request, file, cb) {
@@ -22,13 +22,13 @@ const upload = multer({
 });
 // });
 
-// Check File Type
+
 function checkFileType(file: MulterFile, cb: multer.FileFilterCallback) {
-    // Allowed ext
+    
     const filetypes = /jpeg|jpg|png|gif/;
-    // Check ext
+    
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    // Check mime
+  
     const mimetype = filetypes.test(file.mimetype);
 
     if (mimetype && extname) {

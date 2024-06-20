@@ -1,15 +1,16 @@
 import express, { Router } from 'express';
-import { register, login } from '../controllers/userController';
+import { register, login, getProfile, updateProfile } from '../controllers/userController';
 import { verifyToken } from '../middleware/authMiddleware';
+import { validateUserRegistration, validateUserLogin } from '../middleware/validationMiddleware';
+import { upload } from '../middleware/uploadMiddleware';
+
 const userRouter: Router = express.Router();
 
-userRouter.post("/register", register);
- userRouter.post("/login", login);
+userRouter.post("/register",validateUserRegistration, register);
+ userRouter.post("/login",validateUserLogin, login);
 
-userRouter.get('/profile', verifyToken, (req, res) =>{
-    const user = (req as any).decoded;
+ userRouter.get('/profile', verifyToken, getProfile);
+ userRouter.put('/profile/edit', verifyToken, upload.single('profileImage'), updateProfile);
 
-    res.json({message: 'Protected route accessed', user });
-});
 
  export { userRouter};

@@ -32,7 +32,7 @@ export const register = async (req:Request, res:Response) => {
         });
         const result = await userRepository.save(newUser);
 
-        const token = jwt.sign({email : result.email, id : result.id}, SECRET_KEY);
+        const token = jwt.sign({email : result.email, id : result.id}, SECRET_KEY, { expiresIn: '3w'});
         res.status(201).json({user: result, token: token});
      } catch (error) {
         console.log(error);
@@ -62,7 +62,7 @@ export const login = async (req:Request, res:Response) => {
             return res.status(400).json({ message: "Invalid Credentials" });
         }
 
-        const token = jwt.sign({ email: existingUser.email, id: existingUser.id }, SECRET_KEY);
+        const token = jwt.sign({ email: existingUser.email, id: existingUser.id }, SECRET_KEY, { expiresIn: '3w'});
         res.status(200).json({ user: existingUser, token: token });
 
     } catch (error) {
@@ -71,7 +71,49 @@ export const login = async (req:Request, res:Response) => {
     }
 }
 
+
+//for profile part ko code
+export const getProfile = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+  
+    try {
+      const user = await userRepository.findOne({ where: { id: userId }, relations: ['photos'] });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(200).json(user);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
+  export const updateProfile = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { firstName, lastName } = req.body;
+    const profileImage = req.file ? `/uploads/${req.file.filename}` : undefined;
+  
+    try {
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      user.firstName = firstName || user.firstName;
+      user.lastName = lastName || user.lastName;
+      user.profileImage = profileImage || user.profileImage;
+  
+      const updatedUser = await userRepository.save(user);
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
 export const userController = {
     register,
     login,
+    getProfile,
+    updateProfile,
 }

@@ -23,6 +23,9 @@ import { Photo } from "./photoEntity";
         @Column()
         password?: string;
 
+        @Column({ default: '' })
+         profileImage?: string;
+
     @OneToMany(() => Photo, photo => photo.user)
     photos!: Photo[];
 

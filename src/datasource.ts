@@ -3,7 +3,6 @@ import { DataSource } from "typeorm";
 import dotenv from "dotenv";
 import { User } from "./entity/UserEntity";
 import { Photo } from "./entity/photoEntity";
-// import { Image } from "./entity/imageEntity";
 
 dotenv.config();
 
@@ -17,6 +16,7 @@ export const myDataSource = new DataSource({
     entities: [User, Photo ],
     logging: false,
     synchronize: true,
+   
 });
 
 

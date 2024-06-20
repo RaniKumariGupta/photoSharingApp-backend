@@ -26,7 +26,7 @@ async function uploadPhoto(req: Request, res: Response) {
 
         const newPhoto = new Photo();
         newPhoto.caption = caption;
-        // newPhoto.url = `/uploads/${req.file.filename}`; // Store the image URL
+        // newPhoto.url = `/uploads/${req.file.filename}`; 
         newPhoto.url = imageUrl;
         console.log(newPhoto.url);
 
@@ -43,7 +43,31 @@ async function uploadPhoto(req: Request, res: Response) {
     }
 };
 
-//Function to fetch all photos for the current user
+
+export const getPhotoById = async (req: Request, res: Response) => {
+  try {
+    const { photoId } = req.params;
+    if (!photoId) {
+      return res.status(400).json({ message: 'Photo ID is required' });
+    }
+
+    const photoRepository = myDataSource.getRepository(Photo);
+
+    const photo = await photoRepository.findOne({
+      where: { id: Number(photoId) },
+      relations: ['user'],
+    });
+
+    if (!photo) {
+      return res.status(404).json({ message: 'Photo not found' });
+    }
+
+    res.status(200).json(photo);
+  } catch (error) {
+    console.error('Error fetching photo:', error);
+    res.status(500).json({ message: 'An error occurred while fetching the photo' });
+  }
+};
 
 async function getAllUserPhotos(req: Request, res: Response) {
 
@@ -67,8 +91,6 @@ async function getAllUserPhotos(req: Request, res: Response) {
   }
 
   }
-
-//   //for delete 
 
   async function deletePhoto(req: Request, res: Response) {
     try {
@@ -95,8 +117,6 @@ async function getAllUserPhotos(req: Request, res: Response) {
   }
 };
 
-// for Edit 
-
 async function editPhoto(req: Request, res: Response) {
   try {
       const { caption } = req.body;
@@ -114,7 +134,7 @@ async function editPhoto(req: Request, res: Response) {
 
       console.log(req.file)
       if (req.file) {
-        // const imagepath = await Imagepath.findOne
+     
           photo.url = `/uploads/${req.file.filename}`;
       }
 
@@ -127,19 +147,34 @@ async function editPhoto(req: Request, res: Response) {
   }
 }
 
-
-//for explore
 async function exploreAllPhotos(req: Request, res: Response) {
+  const page = parseInt(req.query.page as string, 10) || 1;
+  const limit = parseInt(req.query.limit as string, 10) || 10;
   try {
       const photoRepository = myDataSource.getRepository(Photo);
-      const photos = await photoRepository.find({ relations: ['user'] });
+    
+      const [photos, total] = await photoRepository.findAndCount({
+        take: limit,
+        skip: (page - 1) * limit,
+        relations: ['user']
+      });
+      console.log(`Fetched ${photos.length} photos out of ${total} total photos`);
 
-      res.status(200).json(photos);
+      // res.status(200).json(photos);
+      const nextPage = photos.length < limit ? null : page + 1;
+
+      console.log('Response:', { photos, nextPage, total });
+      res.status(200).json({
+        photos,
+        nextPage,
+        total,
+      });
   } catch (error) {
       console.error('Error fetching photos:', error);
       res.status(500).json({ message: 'An error occurred while fetching all photos' });
   }
 }
 
-export { uploadPhoto, getAllUserPhotos, deletePhoto, editPhoto, exploreAllPhotos};
+
+export { uploadPhoto, getAllUserPhotos,editPhoto, deletePhoto, exploreAllPhotos};
 
